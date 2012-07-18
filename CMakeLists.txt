@@ -325,7 +325,6 @@ else()
     Utilities/ProcessXML
     ThirdParty/protobuf
     ThirdParty/QtTesting
-#    ThirdParty/Xdmf2
 
     CommandLineExecutables
 
