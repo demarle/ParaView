@@ -5177,6 +5177,82 @@
         <Documentation>This property lists which cell-centered arrays to
         read.</Documentation>
       </StringVectorProperty>
+      <StringVectorProperty information_only="1"
+                            name="FieldArrayInfo">
+        <ArraySelectionInformationHelper attribute_name="Field" />
+      </StringVectorProperty>
+      <StringVectorProperty command="SetFieldArrayStatus"
+                            element_types="2 0"
+                            information_property="FieldArrayInfo"
+                            label="Field Arrays"
+                            name="FieldArrayStatus"
+                            number_of_elements="0"
+                            number_of_elements_per_command="2"
+                            panel_visibility="default"
+                            repeat_command="1">
+        <ArraySelectionDomain name="array_list">
+          <RequiredProperties>
+            <Property function="ArrayList"
+                      name="FieldArrayInfo" />
+          </RequiredProperties>
+        </ArraySelectionDomain>
+        <Documentation>This property lists which non-aligned arrays to
+        read.</Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty information_only="1"
+                            name="SetInfo">
+        <ArraySelectionInformationHelper attribute_name="Set" />
+      </StringVectorProperty>
+      <StringVectorProperty command="SetSetStatus"
+                            element_types="2 0"
+                            information_property="SetInfo"
+                            label="Sets"
+                            name="SetStatus"
+                            number_of_elements="2"
+                            number_of_elements_per_command="2"
+                            repeat_command="1">
+        <ArraySelectionDomain name="array_list">
+          <RequiredProperties>
+            <Property function="ArrayList"
+                      name="SetInfo" />
+          </RequiredProperties>
+        </ArraySelectionDomain>
+        <Documentation>Select the sets to be loaded from the dataset, if
+        any.</Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty command="GetSIL"
+                            information_only="1"
+                            name="GridInfo"
+                            si_class="vtkSISILProperty"
+                            subtree="Blocks" />
+
+      <IdTypeVectorProperty command="GetSILUpdateStamp"
+                            default_values="0"
+                            information_only="1"
+                            name="SILTimeStamp"
+                            number_of_elements="1" />
+
+      <StringVectorProperty command="SetGridStatus"
+                            element_types="2 0"
+                            label="Grids"
+                            name="GridStatus"
+                            number_of_elements_per_command="2"
+                            repeat_command="1">
+        <SILDomain name="array_list"
+                   subtree="Blocks">
+          <RequiredProperties>
+            <Property function="ArrayList"
+                      name="GridInfo" />
+            <Property function="TimeStamp"
+                      name="SILTimeStamp" />
+          </RequiredProperties>
+        </SILDomain>
+        <Documentation>Controls which particular data sets to read from a file
+        that contains many data sets inside a composite data set
+        collection.</Documentation>
+      </StringVectorProperty>
 
       <Hints>
         <ReaderFactory extensions="xmf xdmf"
