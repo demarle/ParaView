@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------------
 
 import sys, time, os
-pv_path = '/Users/seb/work/code/ParaView/build-ninja'
+pv_path = '/Builds/ParaView/devel/master_debug'
 output_dir = '/tmp/composite-data-exploration'
 
 if not os.path.exists(output_dir):
@@ -20,15 +20,20 @@ rotation_axis = [0.0, 0.0, 1.0]
 distance = 50.0
 
 wavelet = Wavelet()
+Calculator2 = Calculator()
+Calculator2.Function = 'coordsX'
+Calculator2.ResultArrayName = 'X'
+
+randomVectors = RandomVectors()
 contour_values = [ 64.0, 90.6, 117.2, 143.8, 170.4, 197.0, 223.6, 250.2]
-color_type = [('POINT_DATA', "RTData")]
-luts = { "RTData": GetLookupTableForArray( "RTData", 1, RGBPoints=[63.96153259277344, 0.23, 0.299, 0.754, 157.09104919433594, 0.865, 0.865, 0.865, 250.22056579589844, 0.706, 0.016, 0.15], VectorMode='Magnitude', NanColor=[0.25, 0.0, 0.0], ColorSpace='Diverging', ScalarRangeInitialized=1.0 ) }
+color_type = [('POINT_DATA', "BrownianVectors")]
+luts = { "BrownianVectors": GetLookupTableForArray( "BrownianVectors", 1, RGBPoints=[0, 0.23, 0.299, 0.754, 0.5, 0.865, 0.865, 0.865, 1.0, 0.706, 0.016, 0.15], VectorMode='Magnitude', NanColor=[0.25, 0.0, 0.0], ColorSpace='Diverging', ScalarRangeInitialized=1.0 ) }
 filters = [ wavelet ]
 filters_description = [ {'name': 'Wavelet'} ]
 color_by = [ color_type ]
 
 for iso_value in contour_values:
-    filters.append( Contour( Input=wavelet, PointMergeMethod="Uniform Binning", ContourBy = ['POINTS', 'RTData'], Isosurfaces = [iso_value], ComputeScalars = 1 ) )
+    filters.append( Contour( Input=randomVectors, PointMergeMethod="Uniform Binning", ContourBy = ['POINTS', 'RTData'], Isosurfaces = [iso_value], ComputeScalars = 1 ) )
     color_by.append( color_type )
     filters_description.append({'name': 'iso=%s' % str(iso_value)})
 
