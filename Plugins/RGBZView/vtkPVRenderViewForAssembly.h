@@ -104,6 +104,15 @@ public:
   void CaptureActiveRepresentation();
 
   // Description:
+  void SetDrawCells(int choice);
+  void SetArrayNameToDraw(const char *name);
+  void SetArrayNumberToDraw(int fieldAttributeType);
+  void SetArrayComponentToDraw(int comp);
+  void SetScalarRange(double min, double max);
+  void StartCaptureValues();
+  void StopCaptureValues();
+
+  // Description:
   // Dump composite information as JSON file into CompositeDirectory
   // (composite.json)
   void WriteComposite();
