@@ -94,6 +94,11 @@ public:
   vtkSetMacro(RGBStackSize,int);
 
   // Description:
+  // Set/Get Z image stack size
+  vtkGetMacro(ZStackSize,int);
+  vtkSetMacro(ZStackSize,int);
+
+  // Description:
   // Reset active image stack to 0 so we can start capturing again
   // from the beginning the RGB buffers into our unique RGB generated image.
   void ResetActiveImageStack();
@@ -102,6 +107,11 @@ public:
   // Capture RGB buffer in the proper RGB stack position
   // and increase current active stack position.
   void CaptureActiveRepresentation();
+
+  // Description:
+  // Capture Z buffer in the proper Z stack position
+  // and increase current active stack position.
+  void CaptureActiveRepresentationsDepth();
 
   // Description:
   void SetDrawCells(int choice);
@@ -144,8 +154,11 @@ private:
 
   int ActiveStack;
   int RGBStackSize;
+  int ActiveZ;
+  int ZStackSize;
   bool InsideComputeZOrdering;
   bool InsideRGBDump;
+  bool InsideZDump;
   char* CompositeDirectory;
   int OrderingBufferSize;
   char* OrderingBuffer;

@@ -40,6 +40,13 @@
             default_values="-1"
             number_of_elements="1">
         </IntVectorProperty>
+        <IntVectorProperty
+            name="ZStackSize"
+            animateable="0"
+            command="SetZStackSize"
+            default_values="-1"
+            number_of_elements="1">
+        </IntVectorProperty>
         <DoubleVectorProperty
             name="ClippingBounds"
             animateable="0"
@@ -71,6 +78,11 @@
             name="CaptureActiveRepresentation"
             animateable="0"
             command="CaptureActiveRepresentation">
+        </Property>
+        <Property
+            name="CaptureActiveRepresentationsDepth"
+            animateable="0"
+            command="CaptureActiveRepresentationsDepth">
         </Property>
         <Property
             name="ResetActiveImageStack"

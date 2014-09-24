@@ -1186,9 +1186,12 @@ class CompositeImageExporter(object):
             # Extract images for each fields
             self.view.ResetActiveImageStack()
             self.view.RGBStackSize = nbImages
+            self.view.ZStackSize = composite_size+1
             offset_value = 1
             for compositeIdx in range(composite_size):
                 rep = self.representations[compositeIdx]
+                self.view.ActiveRepresentation = rep
+                self.view.CaptureActiveRepresentationsDepth()
                 offset_composite_name = self.codes[compositeIdx + 1]
                 index = 0
                 for field in self.color_by[compositeIdx]:
@@ -1637,7 +1640,7 @@ def test5():
     }
 
     contour_values = [ 64.0, 90.6, 117.2, 143.8, 170.4, 197.0, 223.6, 250.2]
-    #contour_values = [ 64.0, 143.8, 223.6]
+    contour_values = [ 64.0, 143.8, 223.6]
 
     for iso_value in contour_values:
         simple.Contour(
@@ -1654,11 +1657,10 @@ def test5():
         color_by.append( color_type )
         filters_description.append({'name': 'iso=%s' % str(iso_value)})
 
+    id = 'composite'
     title = "Composite test"
     description = "Because test are important"
     analysis = AnalysisManager( '/tmp/wavelet', title, description)
-
-    id = 'composite'
     title = '3D composite'
     description = "contour set"
     analysis.register_analysis(id, title, description, '{theta}/{phi}/{filename}', CompositeImageExporter.get_data_type())
@@ -1667,8 +1669,8 @@ def test5():
     camera_handler = ThreeSixtyCameraHandler(
         fng,
         None,
-        [ float(r) for r in range(0, 360, 30) ],
-        [ float(r) for r in range(-60, 61, 30) ],
+        [ float(r) for r in range(0, 360, 45) ],
+        [ float(r) for r in range(-60, 61, 45) ],
         center_of_rotation,
         rotation_axis,
         distance)

@@ -290,12 +290,25 @@ struct vtkPVRenderViewForAssembly::vtkInternals {
       this->RGBBuffer->SetValue(offset + position + 1, rgb->GetValue(position + 1));
       this->RGBBuffer->SetValue(offset + position + 2, rgb->GetValue(position + 2));
       }
+  }
 
+  //----------------------------------------------------------------------------
+
+  void CaptureZImage(int idx)
+  {
+    if(idx > this->Owner->GetZStackSize())
+      {
+      return;
+      }
+
+    // Local vars
+    int width = this->Owner->GetSize()[0];
+    int height = this->Owner->GetSize()[1];
 
     // Ensure buffer stack is the right size
     if(idx == 0)
       {
-      int nbImages = this->Owner->GetRGBStackSize();
+      int nbImages = this->Owner->GetZStackSize();
 
       this->ZStack->SetDimensions(width, height * nbImages, 1);
       this->ZStack->GetPointData()->Reset();
@@ -327,15 +340,16 @@ struct vtkPVRenderViewForAssembly::vtkInternals {
     }
 
     // Copy buffer into buffer stack
-    offset = idx * width * height * 1;
-    count = z->GetNumberOfTuples();
-    position = 0;
+    vtkIdType offset = idx * width * height;
+    vtkIdType count = z->GetNumberOfTuples();
+    vtkIdType position = 0;
     while(count--)
       {
       position = count*1;
       this->ZBuffer->SetValue(offset + position + 0, z->GetValue(position + 0));
       }
   }
+
   //----------------------------------------------------------------------------
 
   void WriteImage()
@@ -618,9 +632,12 @@ vtkPVRenderViewForAssembly::vtkPVRenderViewForAssembly()
   this->OrderingBuffer = NULL;
   this->CompositeDirectory = NULL;
   this->InsideRGBDump = false;
+  this->InsideZDump = false;
   this->RepresentationToRender = -1;
   this->ActiveStack = 0;
   this->RGBStackSize = -1;
+  this->ActiveZ = 0;
+  this->ZStackSize = -1;
   this->ImageFormatExtension = NULL;
   this->SetImageFormatExtension("jpg");
 
@@ -812,6 +829,58 @@ void vtkPVRenderViewForAssembly::Render(bool interactive, bool skip_rendering)
     this->SetOrientationAxesVisibility(orientationVisibilityOrigin);
     vtkTimerLog::MarkEndEvent("CaptureRGB" );
     }
+  else if(this->InsideZDump)
+    {
+    vtkTimerLog::MarkStartEvent("CaptureZ" );
+    this->Internal->StoreVisibilityState();
+    bool orientationVisibilityOrigin = (this->OrientationWidget->GetEnabled() != 0);
+    bool centerOfRotationOrigin = (this->CenterAxes->GetVisibility() != 0);
+
+    // Capture Background
+    this->Internal->ClearVisibility();
+
+    this->Superclass::Render(interactive, skip_rendering);
+    if(this->SynchronizedWindows->GetLocalProcessIsDriver() && this->ActiveZ == 0)
+      {
+      this->Internal->CaptureZImage(0);
+      this->ActiveZ++;
+      }
+
+    // Change orientation + center visibility
+    this->SetCenterAxesVisibility(false);
+    this->SetOrientationAxesVisibility(false);
+
+    // Disable all representation and start rendering each one independantly
+    // to capture the RGB Buffer and save a JPEG file.
+    int nbReps = this->Internal->GetNumberOfRepresentations();
+    if(this->RepresentationToRender == -1)
+      {
+      for(int idx = 0; idx < nbReps; ++idx)
+        {
+        this->Internal->UpdateVisibleRepresentation(idx);
+        this->Superclass::Render(interactive, skip_rendering);
+        if(this->SynchronizedWindows->GetLocalProcessIsDriver())
+          {
+          this->Internal->CaptureZImage(this->ActiveZ++);
+          }
+        }
+      }
+    else
+      {
+      this->Internal->UpdateVisibleRepresentation(this->RepresentationToRender);
+      this->Superclass::Render(interactive, skip_rendering);
+      if(this->SynchronizedWindows->GetLocalProcessIsDriver())
+        {
+        this->Internal->CaptureZImage(this->ActiveZ++);
+        }
+      }
+
+    // Reset to previous state representation visibility
+    this->Internal->RestoreVisibilityState();
+    this->SetCenterAxesVisibility(centerOfRotationOrigin);
+    this->SetOrientationAxesVisibility(orientationVisibilityOrigin);
+    vtkTimerLog::MarkEndEvent("CaptureZ" );
+    }
   else
     {
     this->Superclass::Render(interactive, skip_rendering);
@@ -987,6 +1056,7 @@ void vtkPVRenderViewForAssembly::SetActiveRepresentationForComposite(vtkPVDataRe
 void vtkPVRenderViewForAssembly::ResetActiveImageStack()
 {
   this->ActiveStack = 0;
+  this->ActiveZ = 0;
 }
 
 //----------------------------------------------------------------------------
@@ -1000,6 +1070,19 @@ void vtkPVRenderViewForAssembly::CaptureActiveRepresentation()
   this->InsideRGBDump = true;
   this->Render(false, false);
   this->InsideRGBDump = false;
+}
+
+//----------------------------------------------------------------------------
+void vtkPVRenderViewForAssembly::CaptureActiveRepresentationsDepth()
+{
+  if(this->CompositeDirectory == NULL)
+    {
+    return;
+    }
+
+  this->InsideZDump = true;
+  this->Render(false, false);
+  this->InsideZDump = false;
 }
 
 //----------------------------------------------------------------------------
