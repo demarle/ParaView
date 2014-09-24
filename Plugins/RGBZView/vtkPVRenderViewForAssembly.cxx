@@ -54,6 +54,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vtkValuePasses.h"
 #include "vtkWeakPointer.h"
 #include "vtkWindowToImageFilter.h"
+#include "vtkXMLImageDataWriter.h"
 
 #include "vtkAbstractMapper.h"
 
@@ -106,9 +107,19 @@ struct vtkPVRenderViewForAssembly::vtkInternals {
     this->ImageGrabber->SetMagnification(1);
     this->ImageGrabber->SetInputBufferTypeToRGB();
 
+    this->ZGrabber2->SetInput(this->Owner->GetRenderWindow());
+    this->ZGrabber2->ReadFrontBufferOn();
+    this->ZGrabber2->FixBoundaryOff();
+    this->ZGrabber2->ShouldRerenderOff();
+    this->ZGrabber2->SetMagnification(1);
+    this->ZGrabber2->SetInputBufferTypeToZBuffer();
+
+
     this->JPEGWriter->SetInputData(this->ImageStack.GetPointer());
     this->TIFFWriter->SetInputData(this->ImageStack.GetPointer());
     this->PNGWriter->SetInputData(this->ImageStack.GetPointer());
+
+    this->ZWriter->SetInputData(this->ZStack.GetPointer());
 
     this->FieldAssociation =  VTK_SCALAR_MODE_USE_POINT_FIELD_DATA;
     this->FieldNameSet = false;
@@ -279,6 +290,51 @@ struct vtkPVRenderViewForAssembly::vtkInternals {
       this->RGBBuffer->SetValue(offset + position + 1, rgb->GetValue(position + 1));
       this->RGBBuffer->SetValue(offset + position + 2, rgb->GetValue(position + 2));
       }
+
+
+    // Ensure buffer stack is the right size
+    if(idx == 0)
+      {
+      int nbImages = this->Owner->GetRGBStackSize();
+
+      this->ZStack->SetDimensions(width, height * nbImages, 1);
+      this->ZStack->GetPointData()->Reset();
+      vtkNew<vtkFloatArray> zStack;
+      zStack->SetName("Z");
+      zStack->SetNumberOfComponents(1);
+      zStack->SetNumberOfTuples(width * height * nbImages);
+      this->ZStack->GetPointData()->SetScalars(zStack.GetPointer());
+      this->ZBuffer = zStack.GetPointer();
+      }
+
+    // Capture Z buffer
+    vtkSmartPointer<vtkFloatArray> z = vtkSmartPointer<vtkFloatArray>::New();
+#ifdef PARAVIEW_USE_ICE_T
+    if (this->IceTSynchronizedRenderers)
+      {
+      vtkIceTCompositePass* iceTPass = this->IceTSynchronizedRenderers->GetIceTCompositePass();
+      if (iceTPass && iceTPass->GetLastRenderedDepths())
+        {
+        z->DeepCopy(iceTPass->GetLastRenderedDepths());
+        }
+      }
+    else
+#endif
+      {
+      this->ZGrabber2->Modified();
+      this->ZGrabber2->Update();
+      z->DeepCopy(this->ZGrabber2->GetOutput()->GetPointData()->GetScalars());
+    }
+
+    // Copy buffer into buffer stack
+    offset = idx * width * height * 1;
+    count = z->GetNumberOfTuples();
+    position = 0;
+    while(count--)
+      {
+      position = count*1;
+      this->ZBuffer->SetValue(offset + position + 0, z->GetValue(position + 0));
+      }
   }
   //----------------------------------------------------------------------------
 
@@ -314,6 +370,16 @@ struct vtkPVRenderViewForAssembly::vtkInternals {
     this->ActiveWriter->Modified();
     this->ActiveWriter->Write();
     vtkTimerLog::MarkEndEvent( "WriteRGBImageToDisk" );
+
+
+    vtkTimerLog::MarkStartEvent( "WriteZImageToDisk" );
+    // Write image
+    std::stringstream ss2;
+    ss2 << this->Owner->GetCompositeDirectory() << "/z.vti";
+    this->ZWriter->SetFileName(ss2.str().c_str());
+    this->ZWriter->Modified();
+    this->ZWriter->Write();
+    vtkTimerLog::MarkEndEvent( "WriteZImageToDisk" );
   }
 
   //----------------------------------------------------------------------------
@@ -505,12 +571,16 @@ struct vtkPVRenderViewForAssembly::vtkInternals {
   vtkNew<vtkTIFFWriter> TIFFWriter;
   vtkNew<vtkWindowToImageFilter> ImageGrabber;
   vtkNew<vtkImageData> ImageStack;
+  vtkNew<vtkImageData> ZStack;
   // --
   vtkSmartPointer<vtkFloatArray> ArrayHolder;
   vtkNew<vtkWindowToImageFilter> ZGrabber;
+  vtkNew<vtkWindowToImageFilter> ZGrabber2;
   vtkWeakPointer<vtkPVRenderViewForAssembly> Owner;
   vtkWeakPointer<vtkUnsignedCharArray> RGBBuffer;
+  vtkWeakPointer<vtkFloatArray> ZBuffer;
   vtkWeakPointer<vtkImageWriter> ActiveWriter;
+  vtkNew<vtkXMLImageDataWriter> ZWriter;
   bool VisibilityState[255];
   std::vector<vtkWeakPointer<vtkPVDataRepresentation> > CompositeRepresentations;
   static const char* CODING_TABLE;
