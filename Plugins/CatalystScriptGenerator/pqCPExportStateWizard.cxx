@@ -58,6 +58,7 @@ namespace
     "   rescale_data_range=%4,\n"
     "   enable_live_viz=%5,\n"
     "   live_viz_frequency=%6,\n"
+    "   cinema_parameters=None,\n"
     "   filename='%7')\n";
 }
 

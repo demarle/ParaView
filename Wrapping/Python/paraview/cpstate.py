@@ -77,6 +77,35 @@ class ProducerAccessor(smtrace.RealProxyAccessor):
         return trace.raw_data()
 
 # -----------------------------------------------------------------------------
+class SliceAccessor(smtrace.RealProxyAccessor):
+    """
+    """
+    def __init__(self, varname, proxy):
+        smtrace.RealProxyAccessor.__init__(self, varname, proxy)
+
+    def trace_ctor(self, ctor, filter, ctor_args=None, skip_assignment=False):
+        original_trace = smtrace.RealProxyAccessor.trace_ctor(\
+            self, ctor, filter, ctor_args, skip_assignment)
+        trace = smtrace.TraceOutput(original_trace)
+        trace.append_separated(["# register the slice with coprocessor"])
+        trace.append(["coprocessor.RegisterSlice(%s)" % self])
+        trace.append_separator()
+        return trace.raw_data()
+
+# -----------------------------------------------------------------------------
+class ContourAccessor(smtrace.RealProxyAccessor):
+    """
+    """
+    def __init__(self, varname, proxy):
+        smtrace.RealProxyAccessor.__init__(self, varname, proxy)
+
+    def trace_ctor(self, ctor, filter, ctor_args=None, skip_assignment=False):
+        original_trace = smtrace.RealProxyAccessor.trace_ctor(\
+            self, ctor, filter, ctor_args, skip_assignment)
+        trace = smtrace.TraceOutput(original_trace)
+        return trace.raw_data()
+
+# -----------------------------------------------------------------------------
 class ViewAccessor(smtrace.RealProxyAccessor):
     """Accessor for views. Overrides trace_ctor() to trace registering of the
     view with the coprocessor. (I wonder if this registering should be moved to
@@ -170,10 +199,16 @@ class WriterAccessor(smtrace.RealProxyAccessor):
 def cp_hook(varname, proxy):
     """callback to create our special accessors instead of the standard ones."""
     pname = smtrace.Trace.get_registered_name(proxy, "sources")
-    if pname and pname in cpstate_globals.simulation_input_map:
-        return ProducerAccessor(varname, proxy, cpstate_globals.simulation_input_map[pname])
-    if pname and proxy.GetHints() and proxy.GetHints().FindNestedElementByName("WriterProxy"):
-        return WriterAccessor(varname, proxy)
+    if pname:
+        if pname in cpstate_globals.simulation_input_map:
+            return ProducerAccessor(varname, proxy, cpstate_globals.simulation_input_map[pname])
+        if proxy.GetHints() and proxy.GetHints().FindNestedElementByName("WriterProxy"):
+            return WriterAccessor(varname, proxy)
+        if ("servermanager.Slice" in proxy.__class__().__str__() and
+            "Plane object" in proxy.__getattribute__("SliceType").__str__()):
+            return SliceAccessor(varname, proxy)
+        if "servermanager.Contour" in proxy.__class__().__str__():
+            return ContourAccessor(varname, proxy)
     pname = smtrace.Trace.get_registered_name(proxy, "views")
     if pname:
         cpstate_globals.view_proxies.append(proxy)
