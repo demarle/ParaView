@@ -58,8 +58,8 @@ namespace
     "   rescale_data_range=%4,\n"
     "   enable_live_viz=%5,\n"
     "   live_viz_frequency=%6,\n"
-    "   cinema_parameters=None,\n"
-    "   filename='%7')\n";
+    "   cinema_info={%7},\n"
+    "   filename='%8')\n";
 }
 
 //-----------------------------------------------------------------------------
@@ -151,15 +151,41 @@ bool pqCPExportStateWizard::getCommandString(QString& command)
       pqView* view = viewInfo->getView();
       QSize viewSize = view->getSize();
       vtkSMViewProxy* viewProxy = view->getViewProxy();
-      QString info = QString(" '%1' : ['%2', %3, '%4', '%5', '%6', '%7'],").
+      //TODO: get these from GUI
+      QString cinemaCam = QString("{\"camera\":\"spin\", \"phi\":[0,10,20,30], \"theta\":[0,10,20,30] }");
+      QString info = QString(" '%1' : ['%2', %3, '%4', '%5', '%6', '%7', '%8'],").
         arg(proxyManager->GetProxyName("views", viewProxy)).
         arg(viewInfo->getImageFileName()).arg(viewInfo->getWriteFrequency()).
         arg(static_cast<int>(viewInfo->fitToScreen())).
-        arg(viewInfo->getMagnification()).arg(viewSize.width()).arg(viewSize.height());
+        arg(viewInfo->getMagnification()).
+        arg(viewSize.width()).
+        arg(viewSize.height()).
+        arg(cinemaCam);
       rendering_info+= info;
       }
     // remove the last comma -- assume that there's at least one view
     rendering_info.chop(1);
+    }
+
+  QString cinema_info = "None"; // a map from the filter name to argument ranges
+  if(true) //output cinema is enabled
+    { // we are creating images so add information to the view proxies
+    cinema_info = "";
+
+    //TODO:
+    //get list of filters from GUI
+    //TODO:
+    //for filters {
+    //TODO
+    //get name, range from GUI
+    vtkSMSessionProxyManager* proxyManager =
+        vtkSMProxyManager::GetProxyManager()->GetActiveSessionProxyManager();
+    QString info = QString(" '%1' : %2,").arg("contour1").arg("[0,50,100,150,200,250]"); //TODO name, range from above
+    cinema_info+= info;
+    //TODO: end forfilters
+
+    // remove the last comma -- assume that there's at least one view
+    cinema_info.chop(1);
     }
 
   QString filters ="ParaView Python State Files (*.py);;All files (*)";
@@ -203,6 +229,7 @@ bool pqCPExportStateWizard::getCommandString(QString& command)
                    .arg(rescale_data_range)
                    .arg(live_visualization)
                    .arg(live_visualization_frequency)
+                   .arg(cinema_info)
                    .arg(filename);
 
   return true;

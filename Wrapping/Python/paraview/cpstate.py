@@ -20,6 +20,7 @@ def reset_cpstate_globals():
     cpstate_globals.view_proxies = []
     cpstate_globals.screenshot_info = {}
     cpstate_globals.export_rendering = False
+    cpstate_globals.cinema_info = False
 
 reset_cpstate_globals()
 
@@ -82,14 +83,17 @@ class SliceAccessor(smtrace.RealProxyAccessor):
     """
     def __init__(self, varname, proxy):
         smtrace.RealProxyAccessor.__init__(self, varname, proxy)
+        self.varname = varname
 
     def trace_ctor(self, ctor, filter, ctor_args=None, skip_assignment=False):
         original_trace = smtrace.RealProxyAccessor.trace_ctor(\
             self, ctor, filter, ctor_args, skip_assignment)
         trace = smtrace.TraceOutput(original_trace)
-        trace.append_separated(["# register the slice with coprocessor"])
-        trace.append(["coprocessor.RegisterSlice(%s)" % self])
-        trace.append_separator()
+        if cpstate_globals.cinema_info and self.varname in cpstate_globals.cinema_info:
+            valrange = cpstate_globals.cinema_info[self.varname]
+            trace.append_separated(["# register the filter with the coprocessor's cinema generator"])
+            trace.append(["coprocessor.RegisterCinemaTrack('slice', %s, 'SliceOffsetValues', %s)" % (self, valrange)])
+            trace.append_separator()
         return trace.raw_data()
 
 # -----------------------------------------------------------------------------
@@ -98,11 +102,17 @@ class ContourAccessor(smtrace.RealProxyAccessor):
     """
     def __init__(self, varname, proxy):
         smtrace.RealProxyAccessor.__init__(self, varname, proxy)
+        self.varname = varname
 
     def trace_ctor(self, ctor, filter, ctor_args=None, skip_assignment=False):
         original_trace = smtrace.RealProxyAccessor.trace_ctor(\
             self, ctor, filter, ctor_args, skip_assignment)
         trace = smtrace.TraceOutput(original_trace)
+        if cpstate_globals.cinema_info and self.varname in cpstate_globals.cinema_info:
+            valrange = cpstate_globals.cinema_info[self.varname]
+            trace.append_separated(["# register the filter with the coprocessor's cinema generator"])
+            trace.append(["coprocessor.RegisterCinemaTrack('contour', %s, 'Isosurfaces', %s)" % (self, valrange)])
+            trace.append_separator()
         return trace.raw_data()
 
 # -----------------------------------------------------------------------------
@@ -123,11 +133,11 @@ class ViewAccessor(smtrace.RealProxyAccessor):
           "# and provide it with information such as the filename to use,",
           "# how frequently to write the images, etc."])
         params = cpstate_globals.screenshot_info[self.ProxyName]
-        assert len(params) == 6
+        assert len(params) == 7
         trace.append([
             "coprocessor.RegisterView(%s," % self,
-            "    filename='%s', freq=%s, fittoscreen=%s, magnification=%s, width=%s, height=%s)" %\
-                (params[0], params[1], params[2], params[3], params[4], params[5])])
+            "    filename='%s', freq=%s, fittoscreen=%s, magnification=%s, width=%s, height=%s, cinema=%s)" %\
+                (params[0], params[1], params[2], params[3], params[4], params[5], params[6])])
         trace.append_separator()
         return trace.raw_data()
 
@@ -225,7 +235,7 @@ class cpstate_filter_proxies_to_serialize(object):
         return True
 
 # -----------------------------------------------------------------------------
-def DumpPipeline(export_rendering, simulation_input_map, screenshot_info):
+def DumpPipeline(export_rendering, simulation_input_map, screenshot_info, cinema_info):
     """
         Method that will dump the current pipeline and return it as a string trace
         - export_rendering    : boolean telling if we want to export rendering
@@ -235,6 +245,9 @@ def DumpPipeline(export_rendering, simulation_input_map, screenshot_info):
                                 key -> view proxy name
                                 value -> [filename, writefreq, fitToScreen,
                                           magnification, width, height]
+        - cinema_info         : map with information about cinema tracks to record
+                                key -> proxy name
+                                value -> argument ranges,
     """
 
     # reset the global variables.
@@ -243,6 +256,7 @@ def DumpPipeline(export_rendering, simulation_input_map, screenshot_info):
     cpstate_globals.export_rendering = export_rendering
     cpstate_globals.simulation_input_map = simulation_input_map
     cpstate_globals.screenshot_info = screenshot_info
+    cpstate_globals.cinema_info = cinema_info
 
     # Initialize the write frequency map
     for key in cpstate_globals.simulation_input_map.values():
@@ -318,7 +332,8 @@ def run(filename=None):
     viewname = servermanager.ProxyManager().GetProxyName("views", view.SMProxy)
     script = DumpPipeline(export_rendering=True,
         simulation_input_map={"Wavelet1" : "input"},
-        screenshot_info={viewname : [ 'image.png', '1', '1', '2', '400', '400']})
+        screenshot_info={viewname : [ 'image.png', '1', '1', '2', '400', '400']},
+        cinema_info=None)
     if filename:
         f = open(filename, "w")
         f.write(script)

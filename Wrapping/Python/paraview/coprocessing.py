@@ -41,7 +41,7 @@ class CoProcessor(object):
         self.__EnableLiveVisualization = False
         self.__LiveVisualizationFrequency = 1;
         self.__LiveVisualizationLink = None
-        self.__SlicesList = []
+        self.__CinemaTracksList = []
         pass
 
     def SetUpdateFrequencies(self, frequencies):
@@ -149,6 +149,9 @@ class CoProcessor(object):
                 if rescale_lookuptable:
                     self.RescaleDataRange(view, datadescription.GetTime())
                 simple.WriteImage(fname, view, Magnification=view.cpMagnification)
+                cinemaOptions = view.cpCinemaOptions
+                if cinemaOptions and 'camera' in cinemaOptions:
+                    self.UpdateCinema(view, datadescription)
 
     def DoLiveVisualization(self, datadescription, hostname, port):
         """This method execute the code-stub needed to communicate with ParaView
@@ -286,21 +289,16 @@ class CoProcessor(object):
         controller.RegisterPipelineProxy(proxy)
         return proxy
 
-    def RegisterSlice(self, filter):
+    def RegisterCinemaTrack(self, name, proxy, smproperty, valrange):
         """
+        Register a point of control (filter's property) that will be varied over in a cinema export.
         """
-        filterParametersProxy = self.SliceParametersProxy(filter)
-        return filter
+        if not isinstance(proxy, servermanager.Proxy):
+            raise RuntimeError, "Invalid 'proxy' argument passed to RegisterCinemaTrack."
+        self.__CinemaTracksList.append({"name":name, "proxy":proxy, "smproperty":smproperty, "valrange":valrange})
+        return proxy
 
-    def SliceParametersProxy(self, filter):
-        """
-        """
-        if not isinstance(filter, servermanager.Proxy):
-            raise RuntimeError, "Invalid 'writer' argument passed to RegisterSlice."
-        self.__SlicesList.append(filter)
-        return filter
-
-    def RegisterView(self, view, filename, freq, fittoscreen, magnification, width, height):
+    def RegisterView(self, view, filename, freq, fittoscreen, magnification, width, height, cinema):
         """Register a view for image capture with extra meta-data such
         as magnification, size and frequency."""
         if not isinstance(view, servermanager.Proxy):
@@ -310,6 +308,7 @@ class CoProcessor(object):
         view.add_attribute("cpFileName", filename)
         view.add_attribute("cpFitToScreen", fittoscreen)
         view.add_attribute("cpMagnification", magnification)
+        view.add_attribute("cpCinemaOptions", cinema)
         view.ViewSize = [ width, height ]
         self.__ViewsList.append(view)
         return view
@@ -327,7 +326,7 @@ class CoProcessor(object):
            Create a CoProcessing view for image capture with extra meta-data
            such as magnification, size and frequency."""
         view = proxy_ctor()
-        return self.RegisterView(view, filename, freq, fittoscreen, magnification, width, height)
+        return self.RegisterView(view, filename, freq, fittoscreen, magnification, width, height, None)
 
     def Finalize(self):
         for writer in self.__WritersList:
@@ -410,13 +409,7 @@ class CoProcessor(object):
 
                    lut.RGBPoints.SetData(newrgbpoints)
 
-    def UpdateCinema(self, datadescription, cinema_parameters):
-        """Like WriteImages, but this method will update cinema stores for
-        each view."""
-        if cinema_parameters == None:
-            #print "NONE?"
-            #return
-            pass
+    def UpdateCinema(self, view, datadescription):
         import sys
         sys.path.append("/Source/CINEMA/genericIO")
         import cinema_store as CS
@@ -425,49 +418,52 @@ class CoProcessor(object):
 
         timestep = datadescription.GetTimeStep()
         time = datadescription.GetTime()
-        print "Time", timestep, time
+        #TODO: filename dependent on view
+        fname = "cinema/info.json"
+        fs = CS.FileStore(fname)
+        fs.add_metadata({'type':'parametric-image-stack'})
 
-        for view in self.__ViewsList:
-            if (view.cpFrequency and timestep % view.cpFrequency == 0) or \
-               datadescription.GetForceOutput() == True:
-                #find or create cinema file for this view
-                fname = "cinema/info.json"
+        view.ViewTime = time
+        fs.add_descriptor("time", CS.make_cinema_descriptor_properties('time', range(0,timestep+1)))
 
-                view.ViewTime = time
-                fs = CS.FileStore(fname)
-                fs.add_metadata({'type':'parametric-image-stack'})
-                fs.add_descriptor("time", CS.make_cinema_descriptor_properties('time', range(0,timestep+1)))
+        #TODO: should be dependent on GUI selection
+        fnpattern = ".png"
 
-                fnpattern = ".png"
-                descriptors = []
-                tracks = []
-                pos = 0
-                for idx in range(0,len(self.__SlicesList)):
-                    name = "sf%s" % idx
-                    fnpattern = "{"+name+"}_" + fnpattern
-                    fs.add_descriptor(name, CS.make_cinema_descriptor_properties(name, range(0,10,3)))
-                    descriptors.append(name)
-                    tracks.append(pv_explorers.Slice(name, self.__SlicesList[idx]))
+        descriptors = []
+        tracks = []
+        names = []
+        for track in self.__CinemaTracksList:
+            name = track['name']
+            #make unique
+            idx = 0
+            while name in names:
+                name = track['name'] + str(idx)
+                idx = idx+1
+                names.append(name)
 
-                ##at current timestep, run through parameters and dump files
-                def ROTCAM():
-                    fs.filename_pattern = "{time}_{phi}_{theta}_" + fnpattern
-                    fs.add_descriptor("phi", CS.make_cinema_descriptor_properties('phi', [30,60,90,120,140,170]))
-                    fs.add_descriptor("theta", CS.make_cinema_descriptor_properties('theta', [-90,-60,-30,0,30,60,90]))
-                    cam = pv_explorers.Camera([0,0,0], [0,1,0], 75.0, view)
-                    descriptors.append("phi")
-                    descriptors.append("theta")
-                    tracks.append(cam)
-                    e = pv_explorers.ImageExplorer(fs, descriptors, tracks)
-                    e.explore({'time':timestep})
-                    fs.save()
+            fnpattern = "{"+name+"}_" + fnpattern
+            proxy = track['proxy']
+            smproperty = track['smproperty']
+            valrange = track['valrange']
+            fs.add_descriptor(name, CS.make_cinema_descriptor_properties(name, valrange))
+            descriptors.append(name)
+            tracks.append(pv_explorers.Templated(name, proxy, smproperty))
 
-                def STATCAM():
-                    fs.filename_pattern = "{time}_" + fnpattern
-                    fs.add_metadata({'type':'parametric-image-stack'})
-                    fs.add_descriptor("time", CS.make_cinema_descriptor_properties('time', range(0,timestep+1)))
-                    e = pv_explorers.ImageExplorer(fs, descriptors, tracks)
-                    e.explore({'time':timestep})
-                    fs.save()
+        cinemaOptions = view.cpCinemaOptions
+        if cinemaOptions['camera'] == 'spin':
+            fs.filename_pattern = "{time}_{phi}_{theta}_" + fnpattern
+            fs.add_descriptor("phi", CS.make_cinema_descriptor_properties('phi', cinemaOptions['phi']))
+            fs.add_descriptor("theta", CS.make_cinema_descriptor_properties('theta', cinemaOptions['theta']))
+            cam = pv_explorers.Camera([0,0,0], [0,1,0], 75.0, view)
+            descriptors.append("phi")
+            descriptors.append("theta")
+            tracks.append(cam)
+        else:
+            fs.filename_pattern = "{time}_" + fnpattern
+            fs.add_metadata({'type':'parametric-image-stack'})
+            fs.add_descriptor("time", CS.make_cinema_descriptor_properties('time', range(0,timestep+1)))
 
-                STATCAM()
+        #at current timestep, run through parameters and dump files
+        e = pv_explorers.ImageExplorer(fs, descriptors, tracks)
+        e.explore({'time':timestep})
+        fs.save()

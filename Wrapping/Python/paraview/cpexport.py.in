@@ -70,15 +70,13 @@ def DoCoProcessing(datadescription):
 
     # Live Visualization, if enabled.
     coprocessor.DoLiveVisualization(datadescription, "localhost", 22222)
-
-    coprocessor.UpdateCinema(datadescription, cinema_parameters=%s)
 """
 
 from paraview import cpstate
 
 def DumpCoProcessingScript(export_rendering, simulation_input_map, screenshot_info,
     rescale_data_range, enable_live_viz, live_viz_frequency,
-    cinema_parameters,
+    cinema_info,
     filename=None):
     """Returns a string with the generated CoProcessing script based on the
         options specified.
@@ -92,15 +90,14 @@ def DumpCoProcessingScript(export_rendering, simulation_input_map, screenshot_in
                               handle live-visualization.
         live_viz_frequency :- integer specifying how often should
                               the coprocessor send the live data
-        cinema_parameters  :- cinema offline visualizer parameters
+        cinema_info        :- cinema offline visualizer parameters
         filename           :- if specified, the script is written to the file.
     """
     pipeline_script = cpstate.DumpPipeline(\
-        export_rendering, simulation_input_map, screenshot_info)
+        export_rendering, simulation_input_map, screenshot_info, cinema_info)
     script = __output_contents % (pipeline_script,
                                   enable_live_viz, live_viz_frequency,
-                                  rescale_data_range,
-                                  cinema_parameters)
+                                  rescale_data_range)
     if filename:
         outFile = open(filename, "w")
         outFile.write(script)
@@ -120,7 +117,7 @@ def run(filename=None):
         rescale_data_range=True,
         enable_live_viz=True,
         live_viz_frequency=1,
-        cinema_parameters=None,
+        cinema_info=None,
         filename=filename)
     if not filename:
         print "# *** Generated Script Begin ***"
