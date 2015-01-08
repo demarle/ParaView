@@ -37,6 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkSMViewProxy.h>
 #include <vtkPVXMLElement.h>
 
+#include <pqCinemaTrack.h>
 #include <pqApplicationCore.h>
 #include <pqFileDialog.h>
 #include <pqImageOutputInfo.h>
@@ -151,8 +152,29 @@ bool pqCPExportStateWizard::getCommandString(QString& command)
       pqView* view = viewInfo->getView();
       QSize viewSize = view->getSize();
       vtkSMViewProxy* viewProxy = view->getViewProxy();
-      //TODO: get these from GUI
-      QString cinemaCam = QString("{\"camera\":\"spin\", \"phi\":[0,10,20,30], \"theta\":[0,10,20,30] }");
+
+      //cinema camera parameters
+      QString cinemaCam = "{None}";
+      QString camType = viewInfo->getCameraType();
+      if (camType != "None")
+        {
+        cinemaCam = QString("{\"camera\":\"");
+        cinemaCam += camType;
+        cinemaCam += "\", \"phi\":[";
+        for (int i = -180; i < 180; i+= (360/viewInfo->getPhi()))
+          {
+          cinemaCam += QString::number(i) + ",";
+          }
+        cinemaCam.chop(1);
+        cinemaCam += "], \"theta\":[";
+        for (int i = -180; i < 180; i+= (360/viewInfo->getTheta()))
+          {
+          cinemaCam += QString::number(i) + ",";
+          }
+        cinemaCam.chop(1);
+        cinemaCam += "] }";
+        }
+
       QString info = QString(" '%1' : ['%2', %3, '%4', '%5', '%6', '%7', '%8'],").
         arg(proxyManager->GetProxyName("views", viewProxy)).
         arg(viewInfo->getImageFileName()).arg(viewInfo->getWriteFrequency()).
@@ -167,22 +189,31 @@ bool pqCPExportStateWizard::getCommandString(QString& command)
     rendering_info.chop(1);
     }
 
-  QString cinema_info = "None"; // a map from the filter name to argument ranges
-  if(true) //output cinema is enabled
-    { // we are creating images so add information to the view proxies
+  QString cinema_info = "None";
+  if(this->Internals->outputCinema->isChecked()) //output cinema is enabled
+    {
     cinema_info = "";
 
-    //TODO:
-    //get list of filters from GUI
-    //TODO:
-    //for filters {
-    //TODO
-    //get name, range from GUI
-    vtkSMSessionProxyManager* proxyManager =
-        vtkSMProxyManager::GetProxyManager()->GetActiveSessionProxyManager();
-    QString info = QString(" '%1' : %2,").arg("contour1").arg("[0,50,100,150,200,250]"); //TODO name, range from above
-    cinema_info+= info;
-    //TODO: end forfilters
+    for(int i=0;i<this->Internals->cinemaContainer->count();i++)
+      {
+      pqCinemaTrack *p = dynamic_cast<pqCinemaTrack*>(this->Internals->cinemaContainer->widget(i));
+      if (!p->explore())
+        {
+        continue;
+        }
+      QString name = p->filterName();
+      QString values = "[";
+      QVariantList vals = p->scalars();
+      for (int j = 0; j < vals.count(); j++)
+        {
+        values += QString::number(vals.value(j).toDouble());
+        values += ",";
+        }
+      values.chop(1);
+      values += "]";
+      QString info = QString(" '%1' : %2,").arg(name).arg(values);
+      cinema_info+= info;
+      }
 
     // remove the last comma -- assume that there's at least one view
     cinema_info.chop(1);

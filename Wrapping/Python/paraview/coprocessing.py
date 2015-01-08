@@ -410,6 +410,7 @@ class CoProcessor(object):
                    lut.RGBPoints.SetData(newrgbpoints)
 
     def UpdateCinema(self, view, datadescription):
+        #TODO push to paraview module set
         import sys
         sys.path.append("/Source/CINEMA/genericIO")
         import cinema_store as CS
@@ -448,18 +449,21 @@ class CoProcessor(object):
             fs.add_descriptor(name, CS.make_cinema_descriptor_properties(name, valrange))
             descriptors.append(name)
             tracks.append(pv_explorers.Templated(name, proxy, smproperty))
+        if not fnpattern == ".png":
+            fnpattern = "_" + fnpattern
 
         cinemaOptions = view.cpCinemaOptions
-        if cinemaOptions['camera'] == 'spin':
-            fs.filename_pattern = "{time}_{phi}_{theta}_" + fnpattern
+        if cinemaOptions['camera'] == 'Spherical':
+            fs.filename_pattern = "{time}_{phi}_{theta}" + fnpattern
             fs.add_descriptor("phi", CS.make_cinema_descriptor_properties('phi', cinemaOptions['phi']))
             fs.add_descriptor("theta", CS.make_cinema_descriptor_properties('theta', cinemaOptions['theta']))
+            #TODO: eye, at and distance should come from view
             cam = pv_explorers.Camera([0,0,0], [0,1,0], 75.0, view)
             descriptors.append("phi")
             descriptors.append("theta")
             tracks.append(cam)
         else:
-            fs.filename_pattern = "{time}_" + fnpattern
+            fs.filename_pattern = "{time}" + fnpattern
             fs.add_metadata({'type':'parametric-image-stack'})
             fs.add_descriptor("time", CS.make_cinema_descriptor_properties('time', range(0,timestep+1)))
 
