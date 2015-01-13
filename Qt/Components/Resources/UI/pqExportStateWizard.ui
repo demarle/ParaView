@@ -169,7 +169,7 @@
     <string>Select state configuration options.</string>
    </property>
    <layout class="QGridLayout" name="gridLayout_4">
-    <item row="7" column="1">
+    <item row="8" column="1">
      <widget class="QPushButton" name="nextView">
       <property name="enabled">
        <bool>false</bool>
@@ -179,17 +179,7 @@
       </property>
      </widget>
     </item>
-    <item row="7" column="0">
-     <widget class="QPushButton" name="previousView">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="text">
-       <string>Previous View</string>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="0" colspan="2">
+    <item row="5" column="0" colspan="2">
      <widget class="QStackedWidget" name="viewsContainer">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -200,7 +190,7 @@
       <property name="minimumSize">
        <size>
         <width>300</width>
-        <height>283</height>
+        <height>220</height>
        </size>
       </property>
       <property name="frameShape">
@@ -211,7 +201,7 @@
       </property>
      </widget>
     </item>
-    <item row="10" column="0" colspan="2">
+    <item row="11" column="0" colspan="2">
      <widget class="QStackedWidget" name="cinemaContainer">
       <property name="enabled">
        <bool>false</bool>
@@ -225,7 +215,7 @@
       <property name="minimumSize">
        <size>
         <width>300</width>
-        <height>196</height>
+        <height>150</height>
        </size>
       </property>
       <property name="frameShape">
@@ -246,33 +236,13 @@
       </property>
      </widget>
     </item>
-    <item row="11" column="1">
+    <item row="12" column="1">
      <widget class="QPushButton" name="nextTrack">
       <property name="enabled">
        <bool>false</bool>
       </property>
       <property name="text">
        <string>Next Track</string>
-      </property>
-     </widget>
-    </item>
-    <item row="11" column="0">
-     <widget class="QPushButton" name="previousTrack">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="text">
-       <string>Previous Track</string>
-      </property>
-     </widget>
-    </item>
-    <item row="9" column="0">
-     <widget class="QCheckBox" name="outputCinema">
-      <property name="toolTip">
-       <string>Export views as cinema databases for deferred visualization</string>
-      </property>
-      <property name="text">
-       <string>Output to Cinema</string>
       </property>
      </widget>
     </item>
@@ -283,7 +253,7 @@
       </property>
      </widget>
     </item>
-    <item row="3" column="0">
+    <item row="4" column="0">
      <widget class="QCheckBox" name="rescaleDataRange">
       <property name="enabled">
        <bool>true</bool>
@@ -324,7 +294,7 @@
       </property>
      </widget>
     </item>
-    <item row="2" column="0" colspan="2">
+    <item row="3" column="0" colspan="2">
      <widget class="QCheckBox" name="outputRendering">
       <property name="enabled">
        <bool>true</bool>
@@ -334,6 +304,36 @@
       </property>
       <property name="checked">
        <bool>false</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QCheckBox" name="outputCinema">
+      <property name="toolTip">
+       <string>Export views as cinema databases for deferred visualization</string>
+      </property>
+      <property name="text">
+       <string>Output to Cinema</string>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="0">
+     <widget class="QPushButton" name="previousView">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>Previous View</string>
+      </property>
+     </widget>
+    </item>
+    <item row="12" column="0">
+     <widget class="QPushButton" name="previousTrack">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>Previous Track</string>
       </property>
      </widget>
     </item>

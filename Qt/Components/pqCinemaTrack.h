@@ -59,6 +59,8 @@ public:
 
 public slots:
 
+  void toggleTrack(bool checked);
+
 private:
   Q_DISABLE_COPY(pqCinemaTrack)
   QScopedPointer<Ui::CinemaTrack> Track;

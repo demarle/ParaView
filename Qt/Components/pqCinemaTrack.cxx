@@ -69,19 +69,30 @@ pqCinemaTrack::pqCinemaTrack(
       {
       this->Track->label->setText(filter->getSMName().toLower());
       this->Track->radioButton->setEnabled(true);
+      QObject::connect(this->Track->radioButton, SIGNAL(toggled(bool)),
+                       this, SLOT(toggleTrack(bool)));
+
       pqScalarValueListPropertyWidget *vals = new pqScalarValueListPropertyWidget(prop, prox, this);
+      vals->setFixedHeight(200);
       this->valsWidget = vals;
       vals->setRangeDomain(dom);
       vals->setEnabled(true);
-      this->Track->verticalLayout->addWidget(vals);
+      QVBoxLayout *valsLayout = new QVBoxLayout(this->Track->scrollAreaWidgetContents_2);
+      valsLayout->addWidget(vals);
+      valsLayout->insertSpacing(-1, 100); 
       }
     }
-  //TODO: and if not OK, prevent caller from addin git?
 };
 
 //-----------------------------------------------------------------------------
 pqCinemaTrack::~pqCinemaTrack()
 {
+}
+
+//-----------------------------------------------------------------------------
+void pqCinemaTrack::toggleTrack(bool checked)
+{
+  this->valsWidget->setEnabled(checked);
 }
 
 //-----------------------------------------------------------------------------
