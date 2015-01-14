@@ -417,21 +417,48 @@ class CoProcessor(object):
         import explorers
         import pv_explorers
 
-        timestep = datadescription.GetTimeStep()
-        time = datadescription.GetTime()
-        #TODO: filename dependent on view
-        fname = "cinema/info.json"
+        import os.path
+
+        #load or create the cinema store for this view
+        vfname = view.cpFileName
+        vfname = vfname[0:vfname.rfind("_")] #strip _num.ext
+        fname = os.path.join(os.path.dirname(vfname),
+                             "cinema",
+                             os.path.basename(vfname),
+                             "info.json")
         fs = CS.FileStore(fname)
+        try:
+            fs.load()
+        except IOError:
+            pass
         fs.add_metadata({'type':'parametric-image-stack'})
 
-        view.ViewTime = time
-        fs.add_descriptor("time", CS.make_cinema_descriptor_properties('time', range(0,timestep+1)))
+        def float_limiter(x):
+            #a shame, but needed to make sure python, java and filename agree
+            if isinstance(x, (float)):
+                return '%6f' % x #arbitrarily chose 6 decimal places
+            else:
+                return x
 
-        #TODO: should be dependent on GUI selection
-        fnpattern = ".png"
+        #add record of current time to the store
+        timestep = datadescription.GetTimeStep()
+        time = datadescription.GetTime()
+        view.ViewTime = time
+        formatted_time = float_limiter(time)
+        try:
+            tprop = fs.get_descriptor_properties('time')
+            tprop['values'].append(formatted_time)
+        except KeyError:
+            tprop = CS.make_cinema_descriptor_properties('time', [formatted_time])
+            fs.add_descriptor('time', tprop)
 
         descriptors = []
         tracks = []
+
+        #fixed track for time
+        fnpattern = "{time}/"
+
+        #make up track for each variable
         names = []
         for track in self.__CinemaTracksList:
             name = track['name']
@@ -440,34 +467,44 @@ class CoProcessor(object):
             while name in names:
                 name = track['name'] + str(idx)
                 idx = idx+1
-                names.append(name)
-
-            fnpattern = "{"+name+"}_" + fnpattern
+            names.append(name)
+            fnpattern = fnpattern + "{"+name+"}/"
             proxy = track['proxy']
             smproperty = track['smproperty']
-            valrange = track['valrange']
+            valrange = list(float_limiter(x for x in track['valrange']))
             fs.add_descriptor(name, CS.make_cinema_descriptor_properties(name, valrange))
             descriptors.append(name)
             tracks.append(pv_explorers.Templated(name, proxy, smproperty))
-        if not fnpattern == ".png":
-            fnpattern = "_" + fnpattern
 
+        #make track for the camera rotation
+        cam = None
         cinemaOptions = view.cpCinemaOptions
         if cinemaOptions['camera'] == 'Spherical':
-            fs.filename_pattern = "{time}_{phi}_{theta}" + fnpattern
-            fs.add_descriptor("phi", CS.make_cinema_descriptor_properties('phi', cinemaOptions['phi']))
-            fs.add_descriptor("theta", CS.make_cinema_descriptor_properties('theta', cinemaOptions['theta']))
-            #TODO: eye, at and distance should come from view
-            cam = pv_explorers.Camera([0,0,0], [0,1,0], 75.0, view)
+            fnpattern = fnpattern + "{phi}/{theta}/"
+            phis = list(float_limiter(x for x in cinemaOptions['phi']))
+            thetas = list(float_limiter(x for x in cinemaOptions['theta']))
+            fs.add_descriptor("phi", CS.make_cinema_descriptor_properties('phi', phis))
+            fs.add_descriptor("theta", CS.make_cinema_descriptor_properties('theta', thetas))
+            eye = view.CameraPosition
+            at = view.CameraFocalPoint
+            dist = math.sqrt(sum(math.pow(eye[x]-at[x],2) for x in [0,1,2]))
+            #rectify for cinema exporter
+            up = [math.fabs(x) for x in view.CameraViewUp]
+            uppest = 0;
+            if up[1]>up[uppest]: uppest = 1
+            if up[2]>up[uppest]: uppest = 2
+            cinup = [0,0,0]
+            cinup[uppest]=1
+            cam = pv_explorers.Camera(at, cinup, dist, view)
             descriptors.append("phi")
             descriptors.append("theta")
             tracks.append(cam)
-        else:
-            fs.filename_pattern = "{time}" + fnpattern
-            fs.add_metadata({'type':'parametric-image-stack'})
-            fs.add_descriptor("time", CS.make_cinema_descriptor_properties('time', range(0,timestep+1)))
 
-        #at current timestep, run through parameters and dump files
+        fnpattern = fnpattern[:-1] #strip trailing /
+        fnpattern = fnpattern + ".png"
+        fs.filename_pattern = fnpattern
+
+        #at current time, run through parameters and dump files
         e = pv_explorers.ImageExplorer(fs, descriptors, tracks)
-        e.explore({'time':timestep})
+        e.explore({'time':formatted_time})
         fs.save()

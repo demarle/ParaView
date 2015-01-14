@@ -190,7 +190,7 @@ bool pqCPExportStateWizard::getCommandString(QString& command)
     }
 
   QString cinema_info = "None";
-  if(this->Internals->outputCinema->isChecked()) //output cinema is enabled
+  if(this->Internals->outputCinema->isChecked())
     {
     cinema_info = "";
 
@@ -215,7 +215,6 @@ bool pqCPExportStateWizard::getCommandString(QString& command)
       cinema_info+= info;
       }
 
-    // remove the last comma -- assume that there's at least one view
     cinema_info.chop(1);
     }
 

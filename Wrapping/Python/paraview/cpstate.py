@@ -80,6 +80,8 @@ class ProducerAccessor(smtrace.RealProxyAccessor):
 # -----------------------------------------------------------------------------
 class SliceAccessor(smtrace.RealProxyAccessor):
     """
+    augments traces of slice filters with information to explore the
+    parameter space for cinema playback (if enabled)
     """
     def __init__(self, varname, proxy):
         smtrace.RealProxyAccessor.__init__(self, varname, proxy)
@@ -99,6 +101,8 @@ class SliceAccessor(smtrace.RealProxyAccessor):
 # -----------------------------------------------------------------------------
 class ContourAccessor(smtrace.RealProxyAccessor):
     """
+    augments traces of contour filters with information to explore the
+    parameter space for cinema playback (if enabled)
     """
     def __init__(self, varname, proxy):
         smtrace.RealProxyAccessor.__init__(self, varname, proxy)
@@ -244,10 +248,11 @@ def DumpPipeline(export_rendering, simulation_input_map, screenshot_info, cinema
         - screenshot_info     : map with information about screenshots
                                 key -> view proxy name
                                 value -> [filename, writefreq, fitToScreen,
-                                          magnification, width, height]
+                                          magnification, width, height,
+                                          cinemacamera options]
         - cinema_info         : map with information about cinema tracks to record
                                 key -> proxy name
-                                value -> argument ranges,
+                                value -> argument ranges
     """
 
     # reset the global variables.
