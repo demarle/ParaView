@@ -417,11 +417,14 @@ class CoProcessor(object):
         import explorers
         import pv_explorers
 
-        import os.path
+        if not view.IsA("vtkSMRenderViewProxy") == True:
+            return
 
         #load or create the cinema store for this view
+        import os.path
         vfname = view.cpFileName
         vfname = vfname[0:vfname.rfind("_")] #strip _num.ext
+
         fname = os.path.join(os.path.dirname(vfname),
                              "cinema",
                              os.path.basename(vfname),
@@ -434,7 +437,7 @@ class CoProcessor(object):
         fs.add_metadata({'type':'parametric-image-stack'})
 
         def float_limiter(x):
-            #a shame, but needed to make sure python, java and filename agree
+            #a shame, but needed to make sure python, java and (directory/file)name agree
             if isinstance(x, (float)):
                 return '%6f' % x #arbitrarily chose 6 decimal places
             else:
@@ -461,6 +464,11 @@ class CoProcessor(object):
         #make up track for each variable
         names = []
         for track in self.__CinemaTracksList:
+            proxy = track['proxy']
+            rep = servermanager.GetRepresentation(proxy, view)
+            if not rep or rep.Visibility == 0:
+                #skip if track if not visible in this view
+                continue
             name = track['name']
             #make unique
             idx = 0
@@ -477,7 +485,6 @@ class CoProcessor(object):
             tracks.append(pv_explorers.Templated(name, proxy, smproperty))
 
         #make track for the camera rotation
-        cam = None
         cinemaOptions = view.cpCinemaOptions
         if cinemaOptions['camera'] == 'Spherical':
             fnpattern = fnpattern + "{phi}/{theta}/"
@@ -495,16 +502,15 @@ class CoProcessor(object):
             if up[2]>up[uppest]: uppest = 2
             cinup = [0,0,0]
             cinup[uppest]=1
-            cam = pv_explorers.Camera(at, cinup, dist, view)
             descriptors.append("phi")
             descriptors.append("theta")
-            tracks.append(cam)
+            tracks.append(pv_explorers.Camera(at, cinup, dist, view))
 
         fnpattern = fnpattern[:-1] #strip trailing /
         fnpattern = fnpattern + ".png"
         fs.filename_pattern = fnpattern
 
         #at current time, run through parameters and dump files
-        e = pv_explorers.ImageExplorer(fs, descriptors, tracks)
+        e = pv_explorers.ImageExplorer(fs, descriptors, tracks, view=view)
         e.explore({'time':formatted_time})
         fs.save()
