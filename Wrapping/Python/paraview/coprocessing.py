@@ -410,15 +410,12 @@ class CoProcessor(object):
                    lut.RGBPoints.SetData(newrgbpoints)
 
     def UpdateCinema(self, view, datadescription):
-        #TODO push to paraview module set
-        import sys
-        sys.path.append("/Source/CINEMA/genericIO")
-        import cinema_store as CS
-        import explorers
-        import pv_explorers
-
         if not view.IsA("vtkSMRenderViewProxy") == True:
             return
+
+        import paraview.cinemaIO.cinema_store as CS
+        import paraview.cinemaIO.explorers as explorers
+        import paraview.cinemaIO.pv_explorers as pv_explorers
 
         #load or create the cinema store for this view
         import os.path
@@ -462,13 +459,14 @@ class CoProcessor(object):
         fnpattern = "{time}/"
 
         #make up track for each variable
+        vals = []
         names = []
         for track in self.__CinemaTracksList:
             proxy = track['proxy']
-            rep = servermanager.GetRepresentation(proxy, view)
-            if not rep or rep.Visibility == 0:
-                #skip if track if not visible in this view
-                continue
+            #rep = servermanager.GetRepresentation(proxy, view)
+            #if not rep or rep.Visibility == 0:
+            #    #skip if track if not visible in this view
+            #    continue
             name = track['name']
             #make unique
             idx = 0
@@ -483,6 +481,8 @@ class CoProcessor(object):
             fs.add_descriptor(name, CS.make_cinema_descriptor_properties(name, valrange))
             descriptors.append(name)
             tracks.append(pv_explorers.Templated(name, proxy, smproperty))
+            #save off current value for later restoration
+            vals.append([proxy, smproperty, list(proxy.GetPropertyValue(smproperty))])
 
         #make track for the camera rotation
         cinemaOptions = view.cpCinemaOptions
@@ -505,6 +505,10 @@ class CoProcessor(object):
             descriptors.append("phi")
             descriptors.append("theta")
             tracks.append(pv_explorers.Camera(at, cinup, dist, view))
+            #save off current value for later restoration
+            vals.append([view, 'CameraPosition', list(eye)])
+            vals.append([view, 'CameraFocalPoint', list(at)])
+            vals.append([view, 'CameraViewUp', list(up)])
 
         fnpattern = fnpattern[:-1] #strip trailing /
         fnpattern = fnpattern + ".png"
@@ -514,3 +518,7 @@ class CoProcessor(object):
         e = pv_explorers.ImageExplorer(fs, descriptors, tracks, view=view)
         e.explore({'time':formatted_time})
         fs.save()
+
+        #restore values to what they were at beginning for next view
+        for proxy, property, value in vals:
+            proxy.SetPropertyWithName(property, value)
