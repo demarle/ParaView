@@ -133,6 +133,7 @@ class CoProcessor(object):
             images, as needed."""
         timestep = datadescription.GetTimeStep()
 
+        cinema_dirs = []
         for view in self.__ViewsList:
             if (view.cpFrequency and timestep % view.cpFrequency == 0) or \
                datadescription.GetForceOutput() == True:
@@ -151,7 +152,30 @@ class CoProcessor(object):
                 simple.WriteImage(fname, view, Magnification=view.cpMagnification)
                 cinemaOptions = view.cpCinemaOptions
                 if cinemaOptions and 'camera' in cinemaOptions:
-                    self.UpdateCinema(view, datadescription)
+                    dirname = self.UpdateCinema(view, datadescription)
+                    if dirname:
+                        cinema_dirs.append(dirname)
+
+        if len(cinema_dirs) > 1:
+            workspace = open('cinema/info.json', 'w')
+            workspace.write('{\n')
+            workspace.write('    "metadata": {\n')
+            workspace.write('        "type": "workbench"\n')
+            workspace.write('    },\n')
+            workspace.write('    "runs": [\n')
+            for i in range(0,len(cinema_dirs)):
+                workspace.write('        {\n')
+                workspace.write('        "title": "%s",\n' % cinema_dirs[i])
+                workspace.write('        "description": "%s",\n' % cinema_dirs[i])
+                workspace.write('        "path": "%s"\n' % cinema_dirs[i])
+                if i+1 < len(cinema_dirs):
+                    workspace.write('        },\n')
+                else:
+                    workspace.write('        }\n')
+            workspace.write('    ]\n')
+            workspace.write('}\n')
+            workspace.close()
+
 
     def DoLiveVisualization(self, datadescription, hostname, port):
         """This method execute the code-stub needed to communicate with ParaView
@@ -522,3 +546,5 @@ class CoProcessor(object):
         #restore values to what they were at beginning for next view
         for proxy, property, value in vals:
             proxy.SetPropertyWithName(property, value)
+
+        return os.path.basename(vfname)
