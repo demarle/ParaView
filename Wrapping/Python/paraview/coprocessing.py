@@ -522,7 +522,6 @@ class CoProcessor(object):
         names = []
         for track in self.__CinemaTracksList:
             proxy = track['proxy']
-            #rep = servermanager.GetRepresentation(proxy, view)
             #if not rep or rep.Visibility == 0:
             #    #skip if track if not visible in this view
             #    continue
@@ -584,8 +583,34 @@ class CoProcessor(object):
         fnpattern = fnpattern + imgext
         fs.filename_pattern = fnpattern
 
+        col = None
+        #cinemaOptions['valueColor'] = {'arrayname':'RTData',
+        #                               'oncells':0,
+        #                               'component':0,
+        #                               'range':[0,256]}
+        if 'valueColor' in cinemaOptions and simple.GetActiveSource():
+            rep = simple.GetRepresentation(simple.GetActiveSource(), simple.GetActiveView())
+            rep.SetScalarBarVisibility(view, False)
+            arr_name = cinemaOptions['valueColor']['arrayname']
+            arr_oncells = cinemaOptions['valueColor']['oncells']
+            arr_component = cinemaOptions['valueColor']['component']
+            arr_range = cinemaOptions['valueColor']['range']
+            colorChoice = pv_explorers.ColorList()
+            colorChoice.AddValueRender(arr_name, arr_oncells,
+                                       arr_name, arr_component, arr_range)
+            col = pv_explorers.Color('color', colorChoice, rep)
+
+            parameters.append('color')
+            tracks.append(col)
+            fs.add_parameter('color',
+                             CS.make_parameter('color', [arr_name], typechoice='list'))
+
+
         #at current time, run through parameters and dump files
         e = pv_explorers.ImageExplorer(fs, parameters, tracks, view=view, iSave=(pid==0))
+        if col:
+            col.imageExplorer = e
+
         e.explore({'time':formatted_time})
 
         if pid == 0:

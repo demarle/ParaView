@@ -590,6 +590,18 @@ public:
   void AddPropToRenderer(vtkProp* prop);
   void RemovePropFromRenderer(vtkProp* prop);
 
+  // Description:
+  // Tells view that it should draw a particular array component
+  // to the screen such that the pixels can be read back and
+  // decoded to obtain the values.
+  void SetDrawCells(int choice);
+  void SetArrayNameToDraw(const char *name);
+  void SetArrayNumberToDraw(int fieldAttributeType);
+  void SetArrayComponentToDraw(int comp);
+  void SetScalarRange(double min, double max);
+  void StartCaptureValues();
+  void StopCaptureValues();
+
 //BTX
 protected:
   vtkPVRenderView();

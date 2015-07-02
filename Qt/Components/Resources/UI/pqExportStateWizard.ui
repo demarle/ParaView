@@ -169,83 +169,6 @@
     <string>Select state configuration options.</string>
    </property>
    <layout class="QGridLayout" name="gridLayout_4">
-    <item row="8" column="1">
-     <widget class="QPushButton" name="nextView">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="text">
-       <string>Next View</string>
-      </property>
-     </widget>
-    </item>
-    <item row="5" column="0" colspan="2">
-     <widget class="QStackedWidget" name="viewsContainer">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>300</width>
-        <height>220</height>
-       </size>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::Box</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Sunken</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="11" column="0" colspan="2">
-     <widget class="QStackedWidget" name="cinemaContainer">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>300</width>
-        <height>150</height>
-       </size>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::Box</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Sunken</enum>
-      </property>
-      <property name="currentIndex">
-       <number>-1</number>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="0">
-     <widget class="QCheckBox" name="liveViz">
-      <property name="text">
-       <string>Live Visualization</string>
-      </property>
-     </widget>
-    </item>
-    <item row="12" column="1">
-     <widget class="QPushButton" name="nextTrack">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="text">
-       <string>Next Track</string>
-      </property>
-     </widget>
-    </item>
     <item row="1" column="1">
      <widget class="QLabel" name="label_2">
       <property name="text">
@@ -269,6 +192,13 @@
       </property>
       <property name="text">
        <string>Rescale to Data Range</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QCheckBox" name="liveViz">
+      <property name="text">
+       <string>Live Visualization</string>
       </property>
      </widget>
     </item>
@@ -317,24 +247,231 @@
       </property>
      </widget>
     </item>
-    <item row="8" column="0">
-     <widget class="QPushButton" name="previousView">
-      <property name="enabled">
-       <bool>false</bool>
+    <item row="5" column="0">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="minimumSize">
+       <size>
+        <width>320</width>
+        <height>400</height>
+       </size>
       </property>
-      <property name="text">
-       <string>Previous View</string>
+      <property name="currentIndex">
+       <number>2</number>
       </property>
-     </widget>
-    </item>
-    <item row="12" column="0">
-     <widget class="QPushButton" name="previousTrack">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="text">
-       <string>Previous Track</string>
-      </property>
+      <widget class="QWidget" name="valuerendering">
+       <attribute name="title">
+        <string>Value Render</string>
+       </attribute>
+       <widget class="QStackedWidget" name="gridStackedWidget">
+        <property name="geometry">
+         <rect>
+          <x>-10</x>
+          <y>-10</y>
+          <width>331</width>
+          <height>291</height>
+         </rect>
+        </property>
+        <widget class="QWidget" name="gridStackedWidgetPage1">
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="4" column="0">
+           <widget class="QLineEdit" name="minValue"/>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Component</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Max</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Min</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="outputValue">
+            <property name="text">
+             <string>Value Render</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="valsOnCells">
+            <property name="text">
+             <string>Vals On Cells</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QSpinBox" name="component">
+            <property name="maximum">
+             <number>2</number>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLineEdit" name="maxValue"/>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Array Name</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLineEdit" name="arrayName"/>
+          </item>
+          <item row="8" column="0">
+           <spacer name="verticalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="ViewTab">
+       <attribute name="title">
+        <string>Views</string>
+       </attribute>
+       <widget class="QWidget" name="gridLayoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>312</width>
+          <height>411</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_6">
+         <item row="0" column="0">
+          <widget class="QStackedWidget" name="viewsContainer">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>300</width>
+             <height>220</height>
+            </size>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::Box</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QPushButton" name="previousView">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Previous View</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QPushButton" name="nextView">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Next View</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tab_3">
+       <attribute name="title">
+        <string>Cinema Tracks</string>
+       </attribute>
+       <widget class="QWidget" name="gridLayoutWidget_2">
+        <property name="geometry">
+         <rect>
+          <x>1</x>
+          <y>0</y>
+          <width>312</width>
+          <height>411</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_7">
+         <item row="0" column="0">
+          <widget class="QStackedWidget" name="cinemaContainer">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>300</width>
+             <height>150</height>
+            </size>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::Box</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <property name="currentIndex">
+            <number>-1</number>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QPushButton" name="previousTrack">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Previous Track</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QPushButton" name="nextTrack">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Next Track</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -354,6 +491,30 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>showAllSources</tabstop>
+  <tabstop>allInputs</tabstop>
+  <tabstop>simulationInputs</tabstop>
+  <tabstop>addButton</tabstop>
+  <tabstop>removeButton</tabstop>
+  <tabstop>nameWidget</tabstop>
+  <tabstop>liveViz</tabstop>
+  <tabstop>timeCompartmentSize</tabstop>
+  <tabstop>outputCinema</tabstop>
+  <tabstop>outputRendering</tabstop>
+  <tabstop>rescaleDataRange</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>outputValue</tabstop>
+  <tabstop>valsOnCells</tabstop>
+  <tabstop>arrayName</tabstop>
+  <tabstop>component</tabstop>
+  <tabstop>minValue</tabstop>
+  <tabstop>maxValue</tabstop>
+  <tabstop>previousView</tabstop>
+  <tabstop>nextView</tabstop>
+  <tabstop>nextTrack</tabstop>
+  <tabstop>previousTrack</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

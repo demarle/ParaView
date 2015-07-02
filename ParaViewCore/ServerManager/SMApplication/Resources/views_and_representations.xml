@@ -2259,6 +2259,53 @@
           <Group name="textures" />
         </ProxyGroupDomain>
       </ProxyProperty>
+      <Property
+          name="StartCaptureValues"
+          command="StartCaptureValues">
+      </Property>
+      <IntVectorProperty
+          name="DrawCells"
+          command="SetDrawCells"
+          default_values="0"
+          animateable="0"
+          number_of_elements="1">
+      </IntVectorProperty>
+      <StringVectorProperty
+          name="ArrayNameToDraw"
+          command="SetArrayNameToDraw"
+          default_values=""
+          animateable="0"
+          number_of_elements="1">
+      </StringVectorProperty>
+      <IntVectorProperty
+          name="ArrayNumberToDraw"
+          command="SetArrayNumberToDraw"
+          default_values="0"
+          animateable="0"
+          number_of_elements="1">
+        <IntRangeDomain name="range" />
+      </IntVectorProperty>
+      <IntVectorProperty
+          name="ArrayComponentToDraw"
+          command="SetArrayComponentToDraw"
+          default_values="0"
+          animateable="0"
+          number_of_elements="1">
+        <IntRangeDomain name="range" />
+      </IntVectorProperty>
+      <DoubleVectorProperty
+          name="ScalarRange"
+          argument_is_array="0"
+          command="SetScalarRange"
+          default_values="0.0 -1.0"
+          animateable="0"
+          number_of_elements="2">
+        <DoubleRangeDomain name="range" />
+      </DoubleVectorProperty>
+      <Property
+          name="StopCaptureValues"
+          command="StopCaptureValues">
+      </Property>
       <PropertyGroup label="Orientation Axes">
         <Property name="OrientationAxesVisibility"/>
         <Property name="OrientationAxesInteractivity"/>
@@ -2309,6 +2356,14 @@
         <Property name="StereoRender" />
         <Property name="StereoType" />
         <Property name="ServerStereoType" />
+      </PropertyGroup>
+      <PropertyGroup label="Cinema">
+        <Property name="StartCaptureValues" />
+        <Property name="DrawCells"/>
+        <Property name="ArrayNameToDraw"/>
+        <Property name="ArrayNumberToDraw"/>
+        <Property name="ArrayComponentToDraw"/>
+        <Property name="ScalarRange"/>
       </PropertyGroup>
     </RenderViewProxy>
 

@@ -15,6 +15,7 @@
 #include "vtkPVRenderView.h"
 
 #include "vtk3DWidgetRepresentation.h"
+#include "vtkAbstractMapper.h"
 #include "vtkAlgorithmOutput.h"
 #include "vtkBoundingBox.h"
 #include "vtkCamera.h"
@@ -79,6 +80,7 @@
 #include "vtkTrackballPan.h"
 #include "vtkTrackballPan.h"
 #include "vtkTrivialProducer.h"
+#include "vtkValuePasses.h"
 #include "vtkVector.h"
 #include "vtkWeakPointer.h"
 
@@ -95,8 +97,20 @@
 class vtkPVRenderView::vtkInternals
 {
   std::map<int, vtkWeakPointer<vtkPVDataRepresentation> > PropMap;
-
 public:
+  vtkNew<vtkValuePasses> ValuePasses;
+  vtkRenderPass *SavedRenderPass;
+  int FieldAssociation;
+  int FieldAttributeType;
+  std::string FieldName;
+  bool FieldNameSet;
+  int Component;
+  double ScalarRange[2];
+  bool ScalarRangeSet;
+  bool SavedOrientationState;
+  bool SavedAnnotationState;
+  bool IsInCapture;
+
   vtkNew<vtkPVDataDeliveryManager> DeliveryManager;
 
   void RegisterSelectionProp(
@@ -133,6 +147,8 @@ public:
     {
     }
 #endif // PARAVIEW_USE_PISTON
+
+
 };
 
 namespace
@@ -255,6 +271,15 @@ vtkPVRenderView::vtkPVRenderView()
   ServerStereoType(VTK_STEREOTYPE_SAME_AS_CLIENT)
 {
   this->Internals = new vtkInternals();
+  this->Internals->FieldAssociation = VTK_SCALAR_MODE_USE_POINT_FIELD_DATA;
+  this->Internals->FieldNameSet = false;
+  this->Internals->FieldAttributeType = 0;
+  this->Internals->Component = 0;
+  this->Internals->ScalarRangeSet = false;
+  this->Internals->ScalarRange[0] = 0.0;
+  this->Internals->ScalarRange[1] = -1.0;
+  this->Internals->IsInCapture = false;
+
   // non-reference counted, so no worries about reference loops.
   this->Internals->DeliveryManager->SetRenderView(this);
 
@@ -471,6 +496,10 @@ vtkPVRenderView::~vtkPVRenderView()
     this->PolygonStyle = 0;
     }
 
+  if (this->Internals->SavedRenderPass)
+    {
+    this->Internals->SavedRenderPass->UnRegister(NULL);
+    }
   delete this->Internals;
   this->Internals = NULL;
 }
@@ -2421,4 +2450,138 @@ void vtkPVRenderView::BuildAnnotationText(ostream& str)
   this->Timer->StopTimer();
   double time = this->Timer->GetElapsedTime();
   str << "Frame rate (approx): " << (time > 0.0? 1.0/time : 100000.0) << " fps\n";
+}
+
+//----------------------------------------------------------------------------
+void vtkPVRenderView::SetDrawCells(int choice)
+{
+  bool mod = false;
+  if (choice)
+    {
+    if (this->Internals->FieldAssociation != VTK_SCALAR_MODE_USE_CELL_FIELD_DATA)
+      {
+      this->Internals->FieldAssociation = VTK_SCALAR_MODE_USE_CELL_FIELD_DATA;
+      mod = true;
+      }
+    }
+  else
+    {
+    if (this->Internals->FieldAssociation != VTK_SCALAR_MODE_USE_POINT_FIELD_DATA)
+      {
+      this->Internals->FieldAssociation = VTK_SCALAR_MODE_USE_POINT_FIELD_DATA;
+      mod = true;
+      }
+    }
+
+  if (mod)
+    {
+    if (this->Internals->FieldNameSet)
+      {
+      this->Internals->ValuePasses->SetInputArrayToProcess
+        (this->Internals->FieldAssociation, this->Internals->FieldName.c_str());
+      }
+    else
+      {
+      this->Internals->ValuePasses->SetInputArrayToProcess
+        (this->Internals->FieldAssociation, this->Internals->FieldAttributeType);
+      }
+    this->Modified();
+    }
+}
+
+// ----------------------------------------------------------------------------
+void vtkPVRenderView::SetArrayNameToDraw(const char *name)
+{
+   if ( !this->Internals->FieldNameSet
+       || (this->Internals->FieldName != name) )
+    {
+    this->Internals->FieldName = name;
+    this->Internals->FieldNameSet = true;
+    this->Internals->ValuePasses->SetInputArrayToProcess
+      (this->Internals->FieldAssociation, this->Internals->FieldName.c_str());
+    this->Modified();
+    }
+}
+
+// ----------------------------------------------------------------------------
+void vtkPVRenderView::SetArrayNumberToDraw(int fieldAttributeType)
+{
+  if ( this->Internals->FieldNameSet
+       || (this->Internals->FieldAttributeType != fieldAttributeType) )
+    {
+    this->Internals->FieldAttributeType = fieldAttributeType;
+    this->Internals->FieldNameSet = false;
+    this->Internals->ValuePasses->SetInputArrayToProcess
+      (this->Internals->FieldAssociation, this->Internals->FieldAttributeType);
+    this->Modified();
+    }
+}
+
+// ----------------------------------------------------------------------------
+void vtkPVRenderView::SetArrayComponentToDraw(int comp)
+{
+  if (this->Internals->Component != comp)
+    {
+    this->Internals->Component = comp;
+    this->Internals->ValuePasses->SetInputComponentToProcess(comp);
+    this->Modified();
+    }
+}
+
+// ----------------------------------------------------------------------------
+void vtkPVRenderView::SetScalarRange(double min, double max)
+{
+  if (this->Internals->ScalarRange[0] != min ||
+      this->Internals->ScalarRange[1] != max)
+    {
+    this->Internals->ScalarRange[0] = min;
+    this->Internals->ScalarRange[1] = max;
+    this->Internals->ValuePasses->SetScalarRange(min, max);
+    this->Modified();
+    }
+}
+
+//----------------------------------------------------------------------------
+void vtkPVRenderView::StartCaptureValues()
+{
+  if (not this->Internals->IsInCapture)
+    {
+    this->Internals->SavedRenderPass = this->SynchronizedRenderers->GetRenderPass();
+    if (this->Internals->SavedRenderPass != NULL)
+      {
+      this->Internals->SavedRenderPass->Register(NULL);
+      }
+    this->Internals->SavedOrientationState = (this->OrientationWidget->GetEnabled() != 0);
+    this->Internals->SavedAnnotationState = this->ShowAnnotation;
+    this->SetOrientationAxesVisibility(false);
+    this->SetShowAnnotation(false);
+    this->Internals->IsInCapture = true;
+    }
+
+  if (this->Internals->FieldNameSet)
+    {
+    this->Internals->ValuePasses->SetInputArrayToProcess
+      (this->Internals->FieldAssociation, this->Internals->FieldName.c_str());
+    }
+  else
+    {
+    this->Internals->ValuePasses->SetInputArrayToProcess
+      (this->Internals->FieldAssociation, this->Internals->FieldAttributeType);
+    }
+
+  this->SynchronizedRenderers->SetRenderPass(this->Internals->ValuePasses.GetPointer());
+}
+
+//----------------------------------------------------------------------------
+void vtkPVRenderView::StopCaptureValues()
+{
+  this->Internals->IsInCapture = false;
+  this->SynchronizedRenderers->SetRenderPass(this->Internals->SavedRenderPass);
+  if (this->Internals->SavedRenderPass)
+    {
+    this->Internals->SavedRenderPass->UnRegister(NULL);
+    this->Internals->SavedRenderPass = NULL;
+    }
+  this->SetOrientationAxesVisibility(this->Internals->SavedOrientationState);
+  this->SetShowAnnotation(this->Internals->SavedAnnotationState);
 }

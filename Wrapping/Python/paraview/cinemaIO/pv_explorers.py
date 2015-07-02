@@ -14,9 +14,16 @@ class ImageExplorer(explorers.Explorer):
     """
     def __init__(self,
                 cinema_store, parameters, tracks,
-                view=None):
+                view=None,
+                iSave=True):
         super(ImageExplorer, self).__init__(cinema_store, parameters, tracks)
         self.view = view
+        self.iSave=iSave
+
+    def finish(self):
+        """ Give tracks a chance to clean up after a run """
+        super(ImageExplorer, self).finish()
+        #self.view.StopCaptureValues()
 
     def insert(self, document):
         # FIXME: for now we'll write a temporary image and read that in.
@@ -30,7 +37,20 @@ class ImageExplorer(explorers.Explorer):
         ##fn = self.cinema_store.get_filename(document)
         ##simple.WriteImage(fn)
 
-        super(ImageExplorer, self).insert(document)
+        if self.iSave:
+            super(ImageExplorer, self).insert(document)
+
+    def setDrawMode(self, choice, **kwargs):
+        if choice == 'color':
+            self.view.StopCaptureValues()
+        #if choice == 'depth':
+        #    self.w2i.SetInputBufferTypeToZBuffer()
+        if choice == 'value':
+            self.view.DrawCells = kwargs['field']
+            self.view.ArrayNameToDraw = kwargs['name']
+            self.view.ArrayComponentToDraw = kwargs['component']
+            self.view.ScalarRange = kwargs['range']
+            self.view.StartCaptureValues()
 
 class Camera(explorers.Track):
     """
@@ -157,6 +177,13 @@ class ColorList():
     def AddLUT(self, name, lut):
         self._dict[name] = {'type':'lut','content':lut}
 
+    def AddValueRender(self, name, field, arrayname, component, range):
+        self._dict[name] = {'type':'value',
+                            'field':field,
+                            'arrayname':arrayname,
+                            'component':component,
+                            'range':range}
+
     def getColor(self, name):
         return self._dict[name]
 
@@ -177,6 +204,17 @@ class Color(explorers.Track):
         if spec['type'] == 'rgb':
             self.rep.DiffuseColor = spec['content']
             self.rep.ColorArrayName = None
+            if self.imageExplorer:
+                self.imageExplorer.setDrawMode('color')
         if spec['type'] == 'lut':
             self.rep.LookupTable = spec['content']
             self.rep.ColorArrayName = o
+            if self.imageExplorer:
+                self.imageExplorer.setDrawMode('color')
+        if spec['type'] == 'value':
+            if self.imageExplorer:
+                self.imageExplorer.setDrawMode("value",
+                                               field=spec['field'],
+                                               name=spec['arrayname'],
+                                               component=spec['component'],
+                                               range=spec['range'])

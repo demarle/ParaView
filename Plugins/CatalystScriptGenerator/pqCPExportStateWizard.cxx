@@ -202,6 +202,27 @@ bool pqCPExportStateWizard::getCommandString(QString& command)
           cinemaCam += "\"up\": [" +
             QString::number(up[0]) + "," + QString::number(up[1]) + "," + QString::number(up[2]) + "] ";
           cinemaCam += "} ";
+          if (this->Internals->outputValue->isChecked())
+            {
+            cinemaCam += ",";
+            cinemaCam += "\"valueColor\":{";
+            cinemaCam += "\"arrayname\":\"";
+            cinemaCam += this->Internals->arrayName->text();
+            cinemaCam += "\",";
+            cinemaCam += "\"oncells\":";
+            int oncells = (this->Internals->valsOnCells->isChecked()?1:0);
+            cinemaCam += QString::number(oncells);
+            cinemaCam += ",";
+            cinemaCam += "\"component\":";
+            cinemaCam += this->Internals->component->cleanText();
+            cinemaCam += ",";
+            cinemaCam += "\"range\":[";
+            cinemaCam += this->Internals->minValue->text();
+            cinemaCam += ",";
+            cinemaCam += this->Internals->maxValue->text();
+            cinemaCam += "]";
+            cinemaCam += "} ";
+            }
           }
         cinemaCam += "}";
         }
